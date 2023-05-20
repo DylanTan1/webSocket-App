@@ -1,6 +1,10 @@
 from flask import Flask, request,jsonify
 from flask_socketio import SocketIO,emit
 from flask_cors import CORS
+import openai
+
+import os
+os.environ["OPENAI_API_KEY"] = ""
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -23,8 +27,13 @@ def connected():
 @socketio.on('data')
 def handle_message(data):
     """event listener when client types a message"""
+    
     print("data from the front end: ",str(data))
-    emit("data",{'data':data,'id':request.sid},broadcast=True)
+    prompt = {'role':'user','content':str(data)}
+    emit("data",{'data':str(data),'id':request.sid},broadcast=True)
+    response = openai.ChatCompletion.create(model='gpt-4', messages=[prompt])
+    message = response['choices'][0]['message']['content']
+    emit("data",{'data':message,'id':request.sid},broadcast=True)
 
 @socketio.on("disconnect")
 def disconnected():
